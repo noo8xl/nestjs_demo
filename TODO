@@ -1,0 +1,43 @@
+-> auth:
+  + sign in 
+  + sign up
+  + activate 
+  + forgot password 
+  + check 2fa
+  
+  + validate 2fa
+  *
+  + send messages (2fa, new pwd, errors) via notification API
+
+-> customer:
+  + create
+  + get profile
+  + update profile => name
+  + update profile => avatar
+  + update profile => currency
+  + update to premium *
+  + getSecurity => get 2fa params, account status, change pwd, etc
+  <!-- - get balance -->
+
+
+-> with admin permissions only: 
+  - update 2fa status
+  - update ban status
+  - get customer list  
+  + get documents
+  - update
+
+-> KYC:
+  + create (save data + save files)
+  + get
+  + delete 
+
+-> security:
+  + change password
+  - update 2fa (enable/disable)
+
+
+-> change - to + if task will be done*
+
+--- 
+ * update sql queries !

@@ -1,0 +1,231 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["views"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ##############################################################################################
+// ###################################### Customer area #########################################
+// ##############################################################################################
+
+model Customer {
+  id Int @id @default(autoincrement()) @db.UnsignedInt
+
+  email    String @unique
+  name     String @default("")
+  avatar   String @default("")
+  password String
+
+  CustomerParams  CustomerParams[]
+  CustomerDetails CustomerDetails[]
+  CustomerKYC     CustomerKYC[]
+  KycDocuments    KycDocuments[]
+  CustomerTwoStep CustomerTwoStep[]
+  TwoStepCodeList TwoStepCodeList[]
+  ReferalLink     ReferalLink[]
+
+  @@index([id])
+}
+
+model CustomerDetails {
+  id Int @id @default(autoincrement()) @db.UnsignedInt
+
+  role          ROLE          @default(USER)
+  currency      CURRENCY_TYPE @default(USD)
+  two_step_type TWO_STEP_TYPE @default(OFF)
+
+  registration_type REGISTRATION_TYPE @default(DEFAULT)
+  activation_link   String
+
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamp(6)
+
+  customer_id Int      @db.UnsignedInt
+  customer    Customer @relation(fields: [customer_id], references: [id])
+
+  @@index([customer_id])
+}
+
+model ReferalLink {
+  id Int @id @default(autoincrement()) @db.UnsignedInt
+
+  link       String
+  used_times Int    @db.UnsignedSmallInt
+
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamp(6)
+
+  customer_id Int      @db.UnsignedInt
+  customer    Customer @relation(fields: [customer_id], references: [id])
+}
+
+model CustomerParams {
+  id Int @id @default(autoincrement()) @db.UnsignedInt
+
+  is_banned    Boolean @default(false)
+  is_chat_ban  Boolean @default(false)
+  is_activated Boolean @default(false)
+  is_premium   Boolean @default(false)
+  is_kyc       Boolean @default(false)
+
+  customer_id Int      @db.UnsignedInt
+  customer    Customer @relation(fields: [customer_id], references: [id])
+
+  @@index([customer_id])
+}
+
+model CustomerKYC {
+  id Int @id @default(autoincrement()) @db.UnsignedInt
+
+  first_name   String   @db.VarChar(255)
+  last_name    String   @db.VarChar(255)
+  second_name  String   @db.VarChar(255)
+  birth_date   DateTime @db.Timestamp(6)
+  phone_number String   @db.VarChar(25)
+
+  country  String @db.VarChar(100)
+  province String @db.VarChar(50)
+  zip_code String @db.VarChar(25)
+
+  street       String @db.VarChar(255)
+  state        String @db.VarChar(100)
+  room_number  String @db.VarChar(10)
+  house_number String @db.VarChar(10)
+
+  status        BASE_STATUSES @default(PENDING)
+  document_type DOCUMENT_TYPE
+
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamp(6)
+
+  customer_id  Int @db.UnsignedInt
+  documents_id Int @db.UnsignedInt
+
+  customer  Customer     @relation(fields: [customer_id], references: [id])
+  documents KycDocuments @relation(fields: [documents_id], references: [id])
+}
+
+model KycDocuments {
+  id Int @id @default(autoincrement()) @db.UnsignedInt
+
+  file_path String @db.VarChar(512)
+
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamp(6)
+
+  customer_id Int @db.UnsignedInt
+
+  customerKyc CustomerKYC[]
+  customer    Customer      @relation(fields: [customer_id], references: [id])
+}
+
+// СustomerTwoStep -> describe 2fa user params
+model CustomerTwoStep {
+  id Int @id @default(autoincrement()) @db.UnsignedInt
+
+  type        TWO_STEP_TYPE @default(OFF)
+  telegram_id Int           @default(0) @db.UnsignedInt
+
+  enable_at  DateTime @default(now()) @db.Timestamp(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamp(6)
+
+  // use only for google auth
+  secret_outpath String @default("")
+  secret_base32  String @default("")
+
+  customer_id Int      @db.UnsignedInt
+  customer    Customer @relation(fields: [customer_id], references: [id])
+}
+
+// TwoStepCodeList -> store 2fa codes
+model TwoStepCodeList {
+  id Int @id @default(autoincrement()) @db.UnsignedInt
+
+  code        String
+  email       String
+  expiredDate DateTime @db.Timestamp(6)
+
+  customer_id Int      @db.UnsignedInt
+  customer    Customer @relation(fields: [customer_id], references: [id])
+}
+
+// ##############################################################################################
+// ############################# end of the Customer area #######################################
+// ##############################################################################################
+
+// ##############################################################################################
+// ##################################### views area #############################################
+// ##############################################################################################
+
+// model ActionLog {
+//   id BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+
+//   email        String
+//   ip_address   String
+//   request_city String?
+//   country_name String
+//   location     String
+//   browser      String
+
+//   action     String   @db.VarChar(500)
+//   created_at DateTime @default(now()) @db.Timestamp(6)
+
+//   customer_id BigInt   @db.UnsignedBigInt
+//   customer    Customer @relation(fields: [customer_id], references: [id])
+// }
+
+// ##############################################################################################
+// ################################## Enums list ################################################
+
+// ROLE -> customer role (to handle permissions)
+enum ROLE {
+  USER
+  STAFF
+  ADMIN
+}
+
+enum REGISTRATION_TYPE {
+  REFERAL
+  PROMO
+  DEFAULT
+  CREATED_BY_STAFF
+}
+
+// CURRENCY_TYPE -> map balance in selected currency options
+enum CURRENCY_TYPE {
+  AUD
+  USD
+  EUR
+  RUB
+}
+
+// TWO_STEP_TYPE -> 2fa auth type
+enum TWO_STEP_TYPE {
+  GOOGLE
+  TELEGRAM
+  EMAIL
+  OFF
+}
+
+// DOCUMENT_TYPE -> kyc document types 
+enum DOCUMENT_TYPE {
+  DRIVING_LICENCE
+  PASSPORT
+  ID_CARD
+}
+
+enum BASE_STATUSES {
+  SUCCESS
+  PENDING
+  REJECTED
+}
